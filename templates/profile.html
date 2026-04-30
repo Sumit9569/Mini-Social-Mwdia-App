@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="profile-header">
+    <div class="profile-photo-box">
+        {% if profile.profile_picture %}
+            <img src="{{ profile.profile_picture.url }}" class="profile-photo">
+        {% else %}
+            <i class="fa-solid fa-circle-user default-profile-icon"></i>
+        {% endif %}
+    </div>
+
+    <div class="profile-info">
+        <div class="profile-top">
+            <h2>{{ profile_user.username }}</h2>
+
+            {% if user == profile_user %}
+                <a href="{% url 'edit_profile' %}" class="profile-btn">
+                    <i class="fa-solid fa-pen"></i> Edit Profile
+                </a>
+            {% else %}
+                <a href="{% url 'follow_user' profile_user.username %}" class="profile-btn">
+                    {% if is_following %}
+                        <i class="fa-solid fa-user-minus"></i> Unfollow
+                    {% else %}
+                        <i class="fa-solid fa-user-plus"></i> Follow
+                    {% endif %}
+                </a>
+            {% endif %}
+        </div>
+
+        <div class="profile-stats">
+            <span><strong>{{ posts.count }}</strong> posts</span>
+            <span><strong>{{ followers_count }}</strong> followers</span>
+            <span><strong>{{ following_count }}</strong> following</span>
+        </div>
+
+        <p class="profile-bio">
+            {% if profile.bio %}
+                {{ profile.bio }}
+            {% else %}
+                No bio added yet.
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<hr class="profile-divider">
+
+<h3 class="post-grid-title">
+    <i class="fa-solid fa-table-cells"></i> Posts
+</h3>
+
+<div class="profile-post-grid">
+    {% for post in posts %}
+        <div class="profile-post-card">
+
+            {% if user == post.author %}
+            <div class="post-actions">
+                <a href="{% url 'archive_post' post.id %}" title="Archive">🗂️</a>
+                <a href="{% url 'delete_post' post.id %}" 
+                   onclick="return confirm('Delete this post?')" title="Delete">🗑️</a>
+            </div>
+            {% endif %}
+
+            {% if post.image %}
+                <img src="{{ post.image.url }}">
+            {% else %}
+                <div class="no-image-post">
+                    <i class="fa-solid fa-file-lines"></i>
+                    <p>{{ post.caption }}</p>
+                </div>
+            {% endif %}
+        </div>
+    {% empty %}
+        <p class="empty-posts">No posts yet.</p>
+    {% endfor %}
+</div>
+
+<hr>
+
+<h3 class="post-grid-title">Archived Posts</h3>
+
+<div class="profile-post-grid">
+    {% for post in archived_posts %}
+        <div class="profile-post-card">
+            {% if post.image %}
+                <img src="{{ post.image.url }}">
+            {% endif %}
+        </div>
+    {% empty %}
+        <p class="empty-posts">No archived posts</p>
+    {% endfor %}
+</div>
+
+{% endblock %}

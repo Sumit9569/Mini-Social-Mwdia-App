@@ -1,0 +1,16 @@
+from django import forms
+from .models import Post
+
+
+class PostForm(forms.ModelForm):
+    class Meta:
+        model = Post
+        fields = [
+            'caption',
+            'image',
+            'audio_name',
+            'audio_artist',
+            'audio_link',
+            'tag_people',
+            'location'
+        ]

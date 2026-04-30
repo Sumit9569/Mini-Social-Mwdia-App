@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="edit-profile-box">
+    <h2><i class="fa-solid fa-user-pen"></i> Edit Profile</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <label class="profile-upload-box">
+            <img id="profilePreview" src="{% if form.instance.profile_picture %}{{ form.instance.profile_picture.url }}{% endif %}">
+            <span><i class="fa-solid fa-camera"></i> Change Profile Photo</span>
+            <input type="file" name="profile_picture" accept="image/*" onchange="previewProfile(event)">
+        </label>
+
+        <label>Bio</label>
+        <textarea name="bio" placeholder="Write your bio...">{{ form.instance.bio }}</textarea>
+
+        <button type="submit">
+            <i class="fa-solid fa-floppy-disk"></i> Save Profile
+        </button>
+    </form>
+</div>
+
+<script>
+function previewProfile(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('profilePreview');
+
+    if (file) {
+        preview.src = URL.createObjectURL(file);
+    }
+}
+</script>
+
+{% endblock %}

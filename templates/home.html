@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2 class="page-title"><i class="fa-solid fa-newspaper"></i> Home Feed</h2>
+
+{% for post in posts %}
+
+<!-- <div class="post-card"> -->
+<div class="post-card" ondblclick="doubleTapLike('{% url 'like_post' post.id %}', this)">
+
+    <!-- USER -->
+    <div class="post-header">
+        <a href="{% url 'profile' post.author.username %}">
+            <i class="fa-solid fa-circle-user"></i>
+            {{ post.author.username }}
+        </a>
+    </div>
+
+    <!-- IMAGE -->
+    {% if post.image %}
+        <img src="{{ post.image.url }}" class="post-img">
+    {% endif %}
+
+    <!-- CAPTION -->
+    <p class="caption">
+        {{ post.caption }}
+    </p>
+
+    <!-- 🎵 MUSIC SECTION -->
+    {% if post.audio_name %}
+        {% if post.audio_link %}
+            <a href="{{ post.audio_link }}" target="_blank" class="post-music">
+                <i class="fa-solid fa-music"></i>
+                {{ post.audio_name }}
+                {% if post.audio_artist %}
+                    · {{ post.audio_artist }}
+                {% endif %}
+            </a>
+        {% else %}
+            <p class="post-music">
+                <i class="fa-solid fa-music"></i>
+                {{ post.audio_name }}
+                {% if post.audio_artist %}
+                    · {{ post.audio_artist }}
+                {% endif %}
+            </p>
+        {% endif %}
+    {% endif %}
+
+    <!-- TAG PEOPLE -->
+    {% if post.tag_people %}
+        <p class="post-extra">
+            <i class="fa-solid fa-user-tag"></i>
+            {{ post.tag_people }}
+        </p>
+    {% endif %}
+
+    <!-- LOCATION -->
+    {% if post.location %}
+        <p class="post-extra">
+            <i class="fa-solid fa-location-dot"></i>
+            {{ post.location }}
+        </p>
+    {% endif %}
+
+    <!-- LIKE -->
+    <div class="post-actions">
+        <a href="{% url 'like_post' post.id %}" class="like-btn">
+            {% if user in post.likes.all %}
+                <i class="fa-solid fa-heart"></i> Unlike
+            {% else %}
+                <i class="fa-regular fa-heart"></i> Like
+            {% endif %}
+        </a>
+
+        <span class="like-count">
+            {{ post.total_likes }} likes
+        </span>
+    </div>
+
+    <!-- COMMENTS -->
+    <div class="comment-section">
+        <h4><i class="fa-solid fa-comments"></i> Comments</h4>
+
+        {% for comment in post.comments.all %}
+            <p class="comment">
+                <strong>{{ comment.user.username }}:</strong>
+                {{ comment.text }}
+            </p>
+        {% empty %}
+            <p class="no-comment">No comments yet.</p>
+        {% endfor %}
+
+        <form method="POST" action="{% url 'add_comment' post.id %}" class="comment-form">
+            {% csrf_token %}
+            <input type="text" name="text" placeholder="Write a comment..." required>
+            <button type="submit">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+
+</div>
+
+{% empty %}
+    <p>No posts available.</p>
+{% endfor %}
+
+
+<script>
+function doubleTapLike(url, card) {
+    const heart = document.createElement('div');
+    heart.className = 'double-heart';
+    heart.innerHTML = '❤️';
+
+    card.appendChild(heart);
+
+    setTimeout(() => {
+        window.location.href = url;
+    }, 500);
+
+    setTimeout(() => {
+        heart.remove();
+    }, 900);
+}
+</script>
+
+{% endblock %}

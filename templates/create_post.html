@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="insta-create-box">
+    <h2><i class="fa-solid fa-plus"></i> Create New Post</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <label class="upload-box" id="uploadBox">
+            <div class="slider-preview" id="sliderPreview"></div>
+
+            <i class="fa-solid fa-image" id="uploadIcon"></i>
+            <span id="uploadText">Select Photos</span>
+
+            <input type="file" name="image" accept="image/*" multiple onchange="previewImages(event)">
+        </label>
+
+        <div class="preview-controls" id="previewControls" style="display:none;">
+            <button type="button" onclick="prevImage()">Prev</button>
+            <input type="range" min="1" max="2" step="0.1" value="1" id="zoomRange" oninput="zoomImage()">
+            <button type="button" onclick="nextImage()">Next</button>
+        </div>
+
+        <textarea name="caption" placeholder="Add a caption..."></textarea>
+
+        <input type="hidden" name="audio_name" id="audio_name">
+        <input type="hidden" name="audio_artist" id="audio_artist">
+        <input type="hidden" name="audio_link" id="audio_link">
+        <input type="hidden" name="tag_people" id="tag_people">
+        <input type="hidden" name="location" id="location">
+
+        <div class="option-row" onclick="showBox('musicBox')">
+            <i class="fa-solid fa-music"></i>
+            <span id="musicText">Add audio</span>
+            <b>›</b>
+        </div>
+
+        <div class="search-box" id="musicBox">
+            <input type="text" id="songSearch" placeholder="Search song..." onkeyup="searchSongs()">
+            <div id="songResults"></div>
+        </div>
+
+        <div class="option-row" onclick="showBox('tagBox')">
+            <i class="fa-solid fa-user-tag"></i>
+            <span id="tagText">Tag people</span>
+            <b>›</b>
+        </div>
+
+        <div class="search-box" id="tagBox">
+            <input type="text" onkeyup="filterItems(this, 'user-item')" placeholder="Search user...">
+
+            {% for u in users %}
+            <div class="select-item user-item" onclick="selectUser('{{ u.username }}')">
+                <i class="fa-solid fa-circle-user"></i>
+                <strong>{{ u.username }}</strong>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="option-row" onclick="showBox('locationBox')">
+            <i class="fa-solid fa-location-dot"></i>
+            <span id="locationText">Add location</span>
+            <b>›</b>
+        </div>
+
+        <div class="search-box" id="locationBox">
+            <input type="text" onkeyup="filterItems(this, 'location-item')" placeholder="Search location...">
+
+            {% for loc in locations %}
+            <div class="select-item location-item" onclick="selectLocation('{{ loc }}')">
+                <i class="fa-solid fa-location-dot"></i>
+                <strong>{{ loc }}</strong>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="share-btn">
+            <i class="fa-solid fa-paper-plane"></i> Share Post
+        </button>
+    </form>
+</div>
+
+<script>
+let typingTimer = null;
+let images = [];
+let currentIndex = 0;
+
+function showBox(id) {
+    document.querySelectorAll('.search-box').forEach(box => {
+        if (box.id !== id) box.style.display = 'none';
+    });
+
+    const box = document.getElementById(id);
+    box.style.display = box.style.display === 'block' ? 'none' : 'block';
+}
+
+function previewImages(event) {
+    const files = event.target.files;
+    const slider = document.getElementById('sliderPreview');
+    const icon = document.getElementById('uploadIcon');
+    const text = document.getElementById('uploadText');
+    const controls = document.getElementById('previewControls');
+
+    images = [];
+    slider.innerHTML = "";
+
+    if (files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+            images.push(URL.createObjectURL(files[i]));
+        }
+
+        currentIndex = 0;
+        icon.style.display = 'none';
+        text.style.display = 'none';
+        controls.style.display = 'flex';
+
+        showCurrentImage();
+    }
+}
+
+function showCurrentImage() {
+    const slider = document.getElementById('sliderPreview');
+    const zoomRange = document.getElementById('zoomRange');
+
+    zoomRange.value = 1;
+
+    slider.innerHTML = `
+        <img src="${images[currentIndex]}" id="currentPreviewImage">
+        <span class="image-count">${currentIndex + 1} / ${images.length}</span>
+    `;
+}
+
+function nextImage() {
+    if (images.length === 0) return;
+    currentIndex = (currentIndex + 1) % images.length;
+    showCurrentImage();
+}
+
+function prevImage() {
+    if (images.length === 0) return;
+    currentIndex = (currentIndex - 1 + images.length) % images.length;
+    showCurrentImage();
+}
+
+function zoomImage() {
+    const img = document.getElementById('currentPreviewImage');
+    const zoomValue = document.getElementById('zoomRange').value;
+
+    if (img) {
+        img.style.transform = `scale(${zoomValue})`;
+    }
+}
+
+function searchSongs() {
+    clearTimeout(typingTimer);
+
+    typingTimer = setTimeout(() => {
+        const query = document.getElementById('songSearch').value.trim();
+        const resultBox = document.getElementById('songResults');
+
+        if (query.length < 2) {
+            resultBox.innerHTML = "";
+            return;
+        }
+
+        resultBox.innerHTML = "<p>Searching...</p>";
+
+        fetch(`/song/search/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                resultBox.innerHTML = "";
+
+                if (data.results.length === 0) {
+                    resultBox.innerHTML = "<p>No song found</p>";
+                    return;
+                }
+
+                data.results.forEach(song => {
+                    resultBox.innerHTML += `
+                        <div class="select-item song-card"
+                             onclick="selectSong('${song.title}', '${song.artist}', '${song.link}')">
+                            <i class="fa-solid fa-music"></i>
+                            <div>
+                                <strong>${song.title}</strong>
+                                <small>${song.artist}</small>
+                                <small>Click to select</small>
+                            </div>
+                        </div>
+                    `;
+                });
+            })
+            .catch(() => {
+                resultBox.innerHTML = "<p>Search failed. Try again.</p>";
+            });
+    }, 500);
+}
+
+function selectSong(title, artist, link) {
+    document.getElementById('audio_name').value = title;
+    document.getElementById('audio_artist').value = artist;
+    document.getElementById('audio_link').value = link;
+
+    document.getElementById('musicText').innerText = title + " · " + artist;
+    document.getElementById('musicBox').style.display = 'none';
+}
+
+function filterItems(input, className) {
+    const value = input.value.toLowerCase();
+    const items = document.querySelectorAll('.' + className);
+
+    items.forEach(item => {
+        item.style.display = item.innerText.toLowerCase().includes(value) ? 'flex' : 'none';
+    });
+}
+
+function selectUser(username) {
+    document.getElementById('tag_people').value = username;
+    document.getElementById('tagText').innerText = '@' + username;
+    document.getElementById('tagBox').style.display = 'none';
+}
+
+function selectLocation(location) {
+    document.getElementById('location').value = location;
+    document.getElementById('locationText').innerText = location;
+    document.getElementById('locationBox').style.display = 'none';
+}
+</script>
+
+{% endblock %}
